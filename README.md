@@ -1,0 +1,2 @@
+# rosos
+robot soccer simulator

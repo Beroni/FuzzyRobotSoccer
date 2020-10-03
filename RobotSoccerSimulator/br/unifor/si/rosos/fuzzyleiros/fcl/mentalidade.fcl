@@ -1,0 +1,155 @@
+/*
+   * Essa base de conhecimento busca alterar o estilo de jogo do robo (tornando mais defensivo ou ofensivo)
+   *  de acordo com desenvolver da partida usando como variaveis o tempo do jogo e resultado atual. 
+ */
+
+FUNCTION_BLOCK mentalidade 
+
+VAR_INPUT
+	tempo: REAL;   
+	resultado: REAL;  
+	golsSofridos: REAL;
+	END_VAR
+
+VAR_OUTPUT
+	perfil: REAL;
+END_VAR
+
+
+/* Tempo atual de jogo em segundos 
+ * O tempo foi particionado em 5 partes.*/
+FUZZIFY tempo
+	TERM t1 := TRAPE 0 0 16 48;
+	TERM t2 := TRAPE 0 32 40 72;
+	TERM t3 := TRAPE 24 56 64 96;
+	TERM t4 := TRAPE 48 80 88 120;
+	TERM t5 := TRAPE 72 104 120 120;
+END_FUZZIFY
+
+
+ /* O resultado indica o saldo de gols do resultado atual. Valores negativos indica que o time está perdendo e valores positivos indicam vitoria.
+  * O empate (valor 0) na modelagem foi considerado como derrota, assim o time sempre irá buscar uma vitoria */
+FUZZIFY resultado
+	TERM derrotaGrande := TRAPE -20 -20 -5 -3;
+	TERM derrota:= TRAPE -5 -3 -1 2;
+	TERM vitoria:= TRAPE 0 1 3 5;
+	TERM vitoriaGrande := TRAPE 3 5 20 20;
+END_FUZZIFY
+
+
+/* gols sofridos expressa o quanto o time adversario é eficiente com relacao a partida. 
+ *  */
+FUZZIFY golsSofridos
+	TERM baixo := TRAPE 0 0 2 4;
+	TERM moderado:= TRAPE 2 4 5 7;
+	TERM alto:= TRAPE 5 7 20 20;
+END_FUZZIFY
+
+
+/** Para quantificar a saida foi criado 4 termos (inteiros) para expressar o estilo de jogo.
+ *  Como a saida é discreta (não é continua) foi utilizado um estratégia exclusiva de defuzzilizacao nesse caso.
+ *  COGS - centro de gravidade usado para termos discretos.
+ */ 
+ DEFUZZIFY perfil
+	TERM retranca := 0;
+	TERM contraAtaque := 1;
+	TERM padrao :=2;
+	TERM ataqueIntenso :=3;
+	METHOD : COGS;  
+	DEFAULT := 2; //se durante a execucao alguma variaveis linguistica nao for mapeada a um termo da particao o valor final da defuzzizacao e o default 
+END_DEFUZZIFY
+
+
+
+
+RULEBLOCK DG
+	AND : MIN;
+	ACT : MIN;	// Use 'min' activation method
+	ACCU : MAX;	// Use 'max' accumulation method
+	
+	RULE 1: IF resultado IS derrotaGrande AND golsSofridos IS baixo AND tempo IS t1 THEN perfil IS contraAtaque;
+	RULE 2: IF resultado IS derrotaGrande AND golsSofridos IS baixo AND tempo IS t2 THEN perfil IS padrao;
+	RULE 3: IF resultado IS derrotaGrande AND golsSofridos IS baixo AND tempo IS t3 THEN perfil IS padrao;
+	RULE 4: IF resultado IS derrotaGrande AND golsSofridos IS baixo AND tempo IS t4 THEN perfil IS ataqueIntenso;
+	RULE 5: IF resultado IS derrotaGrande AND golsSofridos IS baixo AND tempo IS t5 THEN perfil IS ataqueIntenso;
+	RULE 6: IF resultado IS derrotaGrande AND golsSofridos IS moderado AND tempo IS t1 THEN perfil IS contraAtaque;
+	RULE 7: IF resultado IS derrotaGrande AND golsSofridos IS moderado AND tempo IS t2 THEN perfil IS contraAtaque;
+	RULE 8: IF resultado IS derrotaGrande AND golsSofridos IS moderado AND tempo IS t3 THEN perfil IS padrao;
+	RULE 9: IF resultado IS derrotaGrande AND golsSofridos IS moderado AND tempo IS t4 THEN perfil IS ataqueIntenso;
+	RULE 10: IF resultado IS derrotaGrande AND golsSofridos IS moderado AND tempo IS t5 THEN perfil IS ataqueIntenso;
+	RULE 11: IF resultado IS derrotaGrande AND golsSofridos IS alto AND tempo IS t1 THEN perfil IS contraAtaque;
+	RULE 12: IF resultado IS derrotaGrande AND golsSofridos IS alto AND tempo IS t2 THEN perfil IS ataqueIntenso;
+	RULE 13: IF resultado IS derrotaGrande AND golsSofridos IS alto AND tempo IS t3 THEN perfil IS ataqueIntenso;
+	RULE 14: IF resultado IS derrotaGrande AND golsSofridos IS alto AND tempo IS t4 THEN perfil IS ataqueIntenso;
+	RULE 15: IF resultado IS derrotaGrande AND golsSofridos IS alto AND tempo IS t5 THEN perfil IS ataqueIntenso;
+END_RULEBLOCK
+
+RULEBLOCK D
+	AND : MIN;
+	ACT : MIN;	// Use 'min' activation method
+	ACCU : MAX;	// Use 'max' accumulation method
+	
+	RULE 1: IF resultado IS derrota AND golsSofridos IS baixo AND tempo IS t1 THEN perfil IS padrao;
+	RULE 2: IF resultado IS derrota AND golsSofridos IS baixo AND tempo IS t2 THEN perfil IS padrao;
+	RULE 3: IF resultado IS derrota AND golsSofridos IS baixo AND tempo IS t3 THEN perfil IS padrao;
+	RULE 4: IF resultado IS derrota AND golsSofridos IS baixo AND tempo IS t4 THEN perfil IS ataqueIntenso;
+	RULE 5: IF resultado IS derrota AND golsSofridos IS baixo AND tempo IS t5 THEN perfil IS ataqueIntenso;
+	RULE 6: IF resultado IS derrota AND golsSofridos IS moderado AND tempo IS t1 THEN perfil IS contraAtaque;
+	RULE 7: IF resultado IS derrota AND golsSofridos IS moderado AND tempo IS t2 THEN perfil IS contraAtaque;
+	RULE 8: IF resultado IS derrota AND golsSofridos IS moderado AND tempo IS t3 THEN perfil IS padrao;
+	RULE 9: IF resultado IS derrota AND golsSofridos IS moderado AND tempo IS t4 THEN perfil IS ataqueIntenso;
+	RULE 10: IF resultado IS derrota AND golsSofridos IS moderado AND tempo IS t5 THEN perfil IS ataqueIntenso;
+	RULE 11: IF resultado IS derrota AND golsSofridos IS alto AND tempo IS t1 THEN perfil IS contraAtaque;
+	RULE 12: IF resultado IS derrota AND golsSofridos IS alto AND tempo IS t2 THEN perfil IS contraAtaque;
+	RULE 13: IF resultado IS derrota AND golsSofridos IS alto AND tempo IS t3 THEN perfil IS ataqueIntenso;
+	RULE 14: IF resultado IS derrota AND golsSofridos IS alto AND tempo IS t4 THEN perfil IS ataqueIntenso;
+	RULE 15: IF resultado IS derrota AND golsSofridos IS alto AND tempo IS t5 THEN perfil IS ataqueIntenso;
+END_RULEBLOCK
+
+RULEBLOCK V
+	AND : MIN;
+	ACT : MIN;	// Use 'min' activation method
+	ACCU : MAX;	// Use 'max' accumulation method
+	
+	RULE 1: IF resultado IS vitoria AND golsSofridos IS baixo AND tempo IS t1 THEN perfil IS padrao;
+	RULE 2: IF resultado IS vitoria AND golsSofridos IS baixo AND tempo IS t2 THEN perfil IS padrao;
+	RULE 3: IF resultado IS vitoria AND golsSofridos IS baixo AND tempo IS t3 THEN perfil IS padrao;
+	RULE 4: IF resultado IS vitoria AND golsSofridos IS baixo AND tempo IS t4 THEN perfil IS contraAtaque;
+	RULE 5: IF resultado IS vitoria AND golsSofridos IS baixo AND tempo IS t5 THEN perfil IS retranca;
+	RULE 6: IF resultado IS vitoria AND golsSofridos IS moderado AND tempo IS t1 THEN perfil IS padrao;
+	RULE 7: IF resultado IS vitoria AND golsSofridos IS moderado AND tempo IS t2 THEN perfil IS padrao;
+	RULE 8: IF resultado IS vitoria AND golsSofridos IS moderado AND tempo IS t3 THEN perfil IS contraAtaque;
+	RULE 9: IF resultado IS vitoria AND golsSofridos IS moderado AND tempo IS t4 THEN perfil IS contraAtaque;
+	RULE 10: IF resultado IS vitoria AND golsSofridos IS moderado AND tempo IS t5 THEN perfil IS retranca;
+	RULE 11: IF resultado IS vitoria AND golsSofridos IS alto AND tempo IS t1 THEN perfil IS padrao;
+	RULE 12: IF resultado IS vitoria AND golsSofridos IS alto AND tempo IS t2 THEN perfil IS contraAtaque;
+	RULE 13: IF resultado IS vitoria AND golsSofridos IS alto AND tempo IS t3 THEN perfil IS contraAtaque;
+	RULE 14: IF resultado IS vitoria AND golsSofridos IS alto AND tempo IS t4 THEN perfil IS contraAtaque;
+	RULE 15: IF resultado IS vitoria AND golsSofridos IS alto AND tempo IS t5 THEN perfil IS retranca;
+END_RULEBLOCK
+
+RULEBLOCK VG
+	AND : MIN;
+	ACT : MIN;	// Use 'min' activation method
+	ACCU : MAX;	// Use 'max' accumulation method
+	
+	RULE 1: IF resultado IS vitoriaGrande AND golsSofridos IS baixo AND tempo IS t1 THEN perfil IS ataqueIntenso;
+	RULE 2: IF resultado IS vitoriaGrande AND golsSofridos IS baixo AND tempo IS t2 THEN perfil IS ataqueIntenso;
+	RULE 3: IF resultado IS vitoriaGrande AND golsSofridos IS baixo AND tempo IS t3 THEN perfil IS ataqueIntenso;
+	RULE 4: IF resultado IS vitoriaGrande AND golsSofridos IS baixo AND tempo IS t4 THEN perfil IS ataqueIntenso;
+	RULE 5: IF resultado IS vitoriaGrande AND golsSofridos IS baixo AND tempo IS t5 THEN perfil IS retranca;
+	RULE 6: IF resultado IS vitoriaGrande AND golsSofridos IS moderado AND tempo IS t1 THEN perfil IS ataqueIntenso;
+	RULE 7: IF resultado IS vitoriaGrande AND golsSofridos IS moderado AND tempo IS t2 THEN perfil IS ataqueIntenso;
+	RULE 8: IF resultado IS vitoriaGrande AND golsSofridos IS moderado AND tempo IS t3 THEN perfil IS ataqueIntenso;
+	RULE 9: IF resultado IS vitoriaGrande AND golsSofridos IS moderado AND tempo IS t4 THEN perfil IS ataqueIntenso;
+	RULE 10: IF resultado IS vitoriaGrande AND golsSofridos IS moderado AND tempo IS t5 THEN perfil IS contraAtaque;
+	RULE 11: IF resultado IS vitoriaGrande AND golsSofridos IS alto AND tempo IS t1 THEN perfil IS ataqueIntenso;
+	RULE 12: IF resultado IS vitoriaGrande AND golsSofridos IS alto AND tempo IS t2 THEN perfil IS ataqueIntenso;
+	RULE 13: IF resultado IS vitoriaGrande AND golsSofridos IS alto AND tempo IS t3 THEN perfil IS ataqueIntenso;
+	RULE 14: IF resultado IS vitoriaGrande AND golsSofridos IS alto AND tempo IS t4 THEN perfil IS contraAtaque;
+	RULE 15: IF resultado IS vitoriaGrande AND golsSofridos IS alto AND tempo IS t5 THEN perfil IS retranca;
+END_RULEBLOCK
+
+
+
+END_FUNCTION_BLOCK

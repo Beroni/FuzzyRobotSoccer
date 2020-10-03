@@ -1,0 +1,142 @@
+FUNCTION_BLOCK player_type
+
+VAR_INPUT
+    game_strategy : REAL;
+	ball_distance_player1 : REAL;
+	ball_distance_player2 : REAL;
+	ball_distance : REAL;
+END_VAR
+
+
+VAR_OUTPUT
+    player1_type : REAL;
+	player2_type : REAL;
+END_VAR
+
+
+FUZZIFY game_strategy
+	TERM mostly_attack := trape 0 0 1 1;
+	TERM mostly_defence := trape 1 1 2 2;
+END_FUZZIFY
+
+
+FUZZIFY ball_distance
+	TERM near := trape 0 0 3 4;
+	TERM moderate := trape 3 4 8 9;
+	TERM far := trape 9 10 10 10;
+END_FUZZIFY
+
+FUZZIFY ball_distance_player1
+	TERM near := trape 0 0 2 3;
+	TERM almost_near := trape 2 3 4 5;
+	TERM almost_far := trape 4 5 6 7;
+	TERM far := trape 6 7 9 9;
+END_FUZZIFY
+
+
+FUZZIFY ball_distance_player2
+	TERM near := trape 0 0 2 3;
+	TERM almost_near := trape 2 3 4 5;
+	TERM almost_far := trape 4 5 6 7;
+	TERM far := trape 6 7 9 9;
+END_FUZZIFY
+
+
+DEFUZZIFY player1_type
+	TERM attack := trape 0 0 1 1;
+	TERM defence := trape 1 1 2 2;
+	METHOD : COA;
+	DEFAULT := 0;
+END_DEFUZZIFY
+
+
+DEFUZZIFY player2_type
+	TERM attack := trape 0 0 1 1;
+	TERM defence := trape 1 1 2 2;
+	METHOD : COA;
+	DEFAULT := 0;
+END_DEFUZZIFY
+
+
+RULEBLOCK player1_type
+    AND : MIN;
+    ACT : MIN;
+    ACCU : MAX;
+	
+	RULE 1 : IF game_strategy IS mostly_attack AND ball_distance_player1 IS near AND 
+				ball_distance_player2 IS almost_near OR ball_distance_player2 IS almost_far OR ball_distance_player2 IS far
+				AND ball_distance IS NOT opponent_field AND ball_distance_player1 IS near THEN player1_type IS attack;
+	
+	RULE 2 : IF game_strategy IS mostly_attack AND ball_distance_player2 IS near AND 
+				ball_distance_player1 IS almost_near OR ball_distance_player2 IS almost_far OR ball_distance_player2 IS far
+				AND ball_distance IS NOT opponent_field AND ball_distance_player1 IS near THEN player1_type IS attack;
+				
+//	RULE 3 : IF game_strategy IS mostly_attack AND ball_distance_player1 IS near AND 
+//				ball_distance_player1 IS almost_near OR ball_distance_player2 IS almost_far OR ball_distance_player2 IS far
+//				AND ball_position IS NOT opponent_field AND ball_distance_player1 THEN player2_type IS attack AND player1_type IS defence;
+				
+	RULE 4 : IF game_strategy IS mostly_attack AND ball_distance_player1 IS near AND ball_distance_player2 IS near 
+			   THEN player1_type IS attack;
+	
+	RULE 5 : IF game_strategy IS mostly_attack AND ball_distance_player1 IS almost_near AND ball_distance_player2 IS almost_near 
+			   THEN player1_type IS attack;
+	
+	RULE 6 : IF game_strategy IS mostly_attack AND ball_distance_player1 IS almost_far AND ball_distance_player2 IS almost_far 
+			   THEN player1_type IS attack;
+	
+	RULE 7 : IF game_strategy IS mostly_attack AND ball_distance_player1 IS far AND ball_distance_player2 IS far 
+			   THEN player1_type IS attack;
+			   
+	RULE 8 : IF game_strategy IS mostly_defence AND ball_distance_player1 IS far AND ball_distance_player2 IS far 
+			   THEN player1_type IS defence;
+			   
+	RULE 9 : IF game_strategy IS mostly_defence AND ball_distance IS opponent_field OR ball_position IS mid_field
+			   THEN player1_type IS defence;
+			   
+	RULE 10 : IF game_strategy IS mostly_defence AND ball_distance IS own_field 
+			   THEN player1_type IS defence;
+				
+END_RULEBLOCK
+
+
+RULEBLOCK player2_type
+    AND : MIN;
+    ACT : MIN;
+    ACCU : MAX;
+	
+	RULE 1 : IF game_strategy IS mostly_attack AND ball_distance_player1 IS near AND 
+				ball_distance_player2 IS almost_near OR ball_distance_player2 IS almost_far OR ball_distance_player2 IS far
+				AND ball_position IS NOT opponent_field AND ball_distance_player1 IS near THEN player2_type IS defence; 
+	
+	RULE 2 : IF game_strategy IS mostly_attack AND ball_distance_player2 IS near AND 
+				ball_distance_player1 IS almost_near OR ball_distance_player2 IS almost_far OR ball_distance_player2 IS far
+				AND ball_position IS NOT opponent_field AND ball_distance_player1 IS near THEN player2_type IS defence;
+				
+//	RULE 3 : IF game_strategy IS mostly_attack AND ball_distance_player1 IS near AND 
+//				ball_distance_player1 IS almost_near OR ball_distance_player2 IS almost_far OR ball_distance_player2 IS far
+//				AND ball_position IS NOT opponent_field AND ball_distance_player1 THEN player2_type IS attack AND player1_type IS defence;
+				
+	RULE 4 : IF game_strategy IS mostly_attack AND ball_distance_player1 IS near AND ball_distance_player2 IS near 
+			   THEN player2_type IS defence;
+	
+	RULE 5 : IF game_strategy IS mostly_attack AND ball_distance_player1 IS almost_near AND ball_distance_player2 IS almost_near 
+			   THEN player2_type IS  defence;
+	
+	RULE 6 : IF game_strategy IS mostly_attack AND ball_distance_player1 IS almost_far AND ball_distance_player2 IS almost_far 
+			   THEN player2_type IS defence;
+	
+	RULE 7 : IF game_strategy IS mostly_attack AND ball_distance_player1 IS far AND ball_distance_player2 IS far 
+			   THEN player2_type IS defence;
+			   
+	RULE 8 : IF game_strategy IS mostly_defence AND ball_distance_player1 IS far AND ball_distance_player2 IS far 
+			   THEN player2_type IS defence;
+			   
+	RULE 9 : IF game_strategy IS mostly_defence AND ball_position IS opponent_field OR ball_position IS mid_field
+			   THEN player2_type IS attack;
+			   
+	RULE 10 : IF game_strategy IS mostly_defence AND ball_position IS own_field 
+			   THEN player2_type IS defence;
+				
+END_RULEBLOCK
+
+END_FUNCTION_BLOCK

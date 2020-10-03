@@ -1,0 +1,192 @@
+FUNCTION_BLOCK PlayerBot    // Início do bloco de definições
+
+    VAR_INPUT               // Definição das variáveis de entrada
+        player_side: REAL;
+        // player_compass: REAL;
+
+        // left_obstacle_distance: REAL;
+        // right_obstacle_distance: REAL;
+        // front_obstacle_distance: REAL;
+        // back_obstacle_distance: REAL;
+
+        ball_angle: REAL;
+        ball_distance: REAL;
+        
+        goal_angle: REAL;
+        goal_distance: REAL;
+    END_VAR
+
+    VAR_OUTPUT              // Definição das variáveis de saída
+        speed: REAL;
+        player_rotation: REAL;
+    END_VAR
+
+    FUZZIFY player_side
+        TERM left  := (0.0, 1.0) (0.5, 0.0) ;
+        TERM right := (0.5, 0.01) (1.0, 1.0) ;
+    END_FUZZIFY
+
+    // // http://jfuzzylogic.sourceforge.net/html/manual.html#membership
+    // // https://stackoverflow.com/questions/16133703/matlab-how-to-plot-normal-curve-from-mean-and-standard-deviation
+    // // https://www.wolframalpha.com/input/?i=exp(-+0.5+*+((x+-+0)+%2F+22.5)+%5E+2)+%2F+(22.5+*+sqrt(2+*+pi))
+    // FUZZIFY player_compass
+    //     TERM right      := gauss  000.0 022.5 ;
+    //     TERM right_down := gauss  045.0 022.5 ;
+    //     TERM down       := gauss  090.0 022.5 ;
+    //     TERM left_down  := gauss  135.0 022.5 ;
+    //     TERM leftA      := gauss  180.0 022.5 ;
+    //     TERM leftB      := gauss -180.0 022.5 ;
+    //     TERM left_up    := gauss -135.0 022.5 ;
+    //     TERM up         := gauss -090.0 022.5 ;
+    //     TERM right_up   := gauss -045.0 022.5 ;
+    // END_FUZZIFY
+
+    // FUZZIFY left_obstacle_distance
+    //     TERM far          := (0.6, 0.0) (0.8, 1.0) (2.5, 1.0) ;
+    //     TERM not_so_close := trape 0.3 0.4 0.6 0.8 ;
+    //     TERM close        := (0.0, 1.0) (0.3, 1.0) (0.4, 0.0) ;
+    // END_FUZZIFY
+
+    FUZZIFY ball_angle
+        TERM right      := gauss  000.0 022.5 ;
+        TERM right_down := gauss  045.0 022.5 ;
+        TERM down       := gauss  090.0 022.5 ;
+        TERM left_down  := gauss  135.0 022.5 ;
+        TERM leftA      := gauss  180.0 022.5 ;
+        TERM leftB      := gauss -180.0 022.5 ;
+        TERM left_up    := gauss -135.0 022.5 ;
+        TERM up         := gauss -090.0 022.5 ;
+        TERM right_up   := gauss -045.0 022.5 ;
+    END_FUZZIFY
+
+    FUZZIFY ball_distance
+        TERM very_close   := (0.00, 1.00) (0.10, 0.00) ;
+        TERM close        := trape 0.00 0.20 0.30 0.40 ;
+        TERM not_so_close := trape 0.30 0.40 0.60 0.70 ;
+        TERM far          := trape 0.60 0.70 0.80 0.90 ;
+        TERM very_far     := (0.80, 0.00) (0.95, 1.00) (1.00, 1.00) ;
+    END_FUZZIFY
+
+    FUZZIFY goal_angle
+        TERM right      := gauss  000.0 022.5 ;
+        TERM right_down := gauss  045.0 022.5 ;
+        TERM down       := gauss  090.0 022.5 ;
+        TERM left_down  := gauss  135.0 022.5 ;
+        TERM leftA      := gauss  180.0 022.5 ;
+        TERM leftB      := gauss -180.0 022.5 ;
+        TERM left_up    := gauss -135.0 022.5 ;
+        TERM up         := gauss -090.0 022.5 ;
+        TERM right_up   := gauss -045.0 022.5 ;
+    END_FUZZIFY
+
+    FUZZIFY goal_distance
+        TERM very_close   := (0.00, 1.00) (0.10, 0.00) ;
+        TERM close        := trape 0.00 0.20 0.30 0.40 ;
+        TERM not_so_close := trape 0.30 0.40 0.60 0.70 ;
+        TERM far          := trape 0.60 0.70 0.80 0.90 ;
+        TERM very_far     := (0.80, 0.00) (0.95, 1.00) (1.00, 1.00) (2.5, 1.00) ;
+    END_FUZZIFY
+
+    DEFUZZIFY speed
+        TERM very_fast   := (0.95, 0.00) (1.00, 1.00) ;
+        TERM fast        := trape 0.70 0.80 0.90 1.00 ;
+        TERM not_so_fast := trape 0.40 0.50 0.70 0.80 ;
+        TERM slow        := trape 0.20 0.30 0.40 0.50 ;
+        TERM very_slow   := (0.01, 1.00) (0.30, 0.00) ;
+        METHOD : COG;  // Método de defuzzificação (Padrão é o Centro de Gravidade)
+        DEFAULT := 0;  // Valor default caso nenhuma regra seja ativada
+    END_DEFUZZIFY
+
+    DEFUZZIFY player_rotation
+        TERM right      := gauss  000.0 022.5 ;
+        TERM right_down := gauss  045.0 022.5 ;
+        TERM down       := gauss  090.0 022.5 ;
+        TERM left_down  := gauss  135.0 022.5 ;
+        TERM leftA      := gauss  180.0 022.5 ;
+        TERM leftB      := gauss -180.0 022.5 ;
+        TERM left_up    := gauss -135.0 022.5 ;
+        TERM up         := gauss -090.0 022.5 ;
+        TERM right_up   := gauss -045.0 022.5 ;
+
+        METHOD : COG;  // Método de defuzzificação (Padrão é o Centro de Gravidade)
+        DEFAULT := 0;  // Valor default caso nenhuma regra seja ativada
+    END_DEFUZZIFY
+
+    RULEBLOCK ball_distance_speed
+        AND : MIN;  // Método MIN utilizado no processamento do operador lógico AND
+        ACT : MIN;  // Método de ativação
+        ACCU : MAX; // método de acumulação
+
+        // Início da descrição de cada regra
+        RULE 1 : IF ball_distance IS very_close THEN speed IS very_fast ;
+        RULE 2 : IF ball_distance IS close THEN speed IS fast ;
+        RULE 3 : IF ball_distance IS not_so_close THEN speed IS not_so_fast ;
+        RULE 4 : IF ball_distance IS far THEN speed IS slow ;
+        RULE 5 : IF ball_distance IS very_far THEN speed IS very_slow ;
+    END_RULEBLOCK
+
+    RULEBLOCK goal_distance_speed
+        AND : MIN;  // Método MIN utilizado no processamento do operador lógico AND
+        ACT : MIN;  // Método de ativação
+        ACCU : MAX; // método de acumulação
+
+        // Início da descrição de cada regra
+        RULE 1 : IF goal_distance IS very_close THEN speed IS very_slow ;
+        RULE 2 : IF goal_distance IS close THEN speed IS slow ;
+        RULE 3 : IF goal_distance IS not_so_close THEN speed IS not_so_fast ;
+        RULE 4 : IF goal_distance IS far THEN speed IS fast ;
+        RULE 5 : IF goal_distance IS very_far THEN speed IS very_fast ;
+    END_RULEBLOCK
+
+    RULEBLOCK defensive_speed
+        AND : MIN;  // Método MIN utilizado no processamento do operador lógico AND
+        ACT : MIN;  // Método de ativação
+        ACCU : MAX; // Método de acumulação
+
+        // Início da descrição de cada regra
+        RULE 1: IF player_side IS left AND ball_angle IS right AND (goal_angle IS right OR goal_angle IS right_down OR goal_angle IS right_up) THEN speed IS very_fast;
+        
+        RULE 2: IF player_side IS right AND (ball_angle IS leftA OR ball_angle IS leftB) AND (goal_angle IS leftA OR goal_angle IS leftB OR goal_angle IS left_down OR goal_angle IS left_up) THEN speed IS very_fast;
+    END_RULEBLOCK
+
+    RULEBLOCK ball_naive_rotation
+        AND : MIN;  // Método MIN utilizado no processamento do operador lógico AND
+        ACT : MIN;  // Método de ativação
+        ACCU : MAX; // Método de acumulação
+
+        // Início da descrição de cada regra
+        RULE 1 : IF ball_angle IS right THEN player_rotation IS right;
+        RULE 2 : IF ball_angle IS right_down THEN player_rotation IS right_down;
+        RULE 3 : IF ball_angle IS down THEN player_rotation IS down;
+        RULE 4 : IF ball_angle IS left_down THEN player_rotation IS left_down;
+        RULE 5 : IF (ball_angle IS leftA OR ball_angle IS leftB) THEN player_rotation IS leftA;
+        RULE 6 : IF ball_angle IS left_up THEN player_rotation IS left_up;
+        RULE 7 : IF ball_angle IS up THEN player_rotation IS up;
+        RULE 8 : IF ball_angle IS right_up THEN player_rotation IS right_up;
+    END_RULEBLOCK
+
+    RULEBLOCK player_side_rotation
+        AND : MIN;  // Método MIN utilizado no processamento do operador lógico AND
+        ACT : MIN;  // Método de ativação
+        ACCU : MAX; // Método de acumulação
+
+        // Início da descrição de cada regra
+        RULE 1 : IF player_side IS left AND ball_angle IS right AND goal_angle IS right THEN player_rotation IS right;
+        RULE 2 : IF player_side IS left AND (ball_angle IS right OR ball_angle IS right_up) AND goal_angle IS right_up THEN player_rotation IS right_up;
+        RULE 3 : IF player_side IS left AND (ball_angle IS right OR ball_angle IS right_down) AND goal_angle IS right_down THEN player_rotation IS right_down;
+        
+        RULE 4 : IF player_side IS left AND (ball_angle IS left_up OR ball_angle IS left_down) AND (goal_angle IS right OR goal_angle IS right_up OR goal_angle IS right_down) THEN player_rotation IS leftA;
+        RULE 5 : IF player_side IS left AND (ball_angle IS leftA OR ball_angle IS leftB) AND (goal_angle IS right OR goal_angle IS right_up) THEN player_rotation IS left_up;
+        RULE 6 : IF player_side IS left AND (ball_angle IS leftA OR ball_angle IS leftB) AND (goal_angle IS right_down) THEN player_rotation IS left_down;
+
+        RULE 7 : IF player_side IS right AND (ball_angle IS leftA OR ball_angle IS leftB) AND (goal_angle IS leftA OR goal_angle IS leftB) THEN player_rotation IS leftA;
+        RULE 8 : IF player_side IS right AND ((ball_angle IS leftA OR ball_angle IS leftB) OR ball_angle IS left_up) AND goal_angle IS left_up THEN player_rotation IS left_up;
+        RULE 9 : IF player_side IS right AND ((ball_angle IS leftA OR ball_angle IS leftB) OR ball_angle IS right_down) AND goal_angle IS left_down THEN player_rotation IS left_down;
+
+        RULE 10 : IF player_side IS right AND (ball_angle IS right_up OR ball_angle IS right_down) AND ((goal_angle IS leftA OR goal_angle  IS leftB) OR goal_angle IS left_up OR goal_angle IS left_down) THEN player_rotation IS right;
+        RULE 11 : IF player_side IS right AND (ball_angle IS right AND ((goal_angle IS leftA OR goal_angle  IS leftB)OR goal_angle IS left_up) THEN player_rotation IS right_up;
+        RULE 12 : IF player_side IS right AND (ball_angle IS right AND (goal_angle IS left_down) THEN player_rotation IS right_down;
+
+    END_RULEBLOCK
+
+END_FUNCTION_BLOCK

@@ -1,0 +1,140 @@
+/*
+	Example: A tip calculation FIS (fuzzy inference system)
+	Calculates tip based on 'servie' and 'food'
+
+	If you want to about this example (and fuzzy logic), please 
+	read Matlab's tutorial on fuzzy logic toolbox 
+	http://www.mathworks.com/access/helpdesk/help/pdf_doc/fuzzy/fuzzy.pdf
+
+									Pablo Cingolani 
+									pcingola@users.sourceforge.net
+*/
+
+FUNCTION_BLOCK tipper	// Block definition (there may be more than one block per file)
+
+VAR_INPUT				// Define input variables
+	posX : REAL;
+	posY : REAL;
+	ballX : REAL;
+	ballY: REAL;
+	speedX: REAL;
+	speedY: REAL;
+	distBola: REAL;
+END_VAR
+
+VAR_OUTPUT				// Define output variable
+	outX : REAL;
+	outY : REAL;
+END_VAR
+
+FUZZIFY posY			
+	TERM latEsq := TRAPE 0 0 0.25 0.35;
+	TERM esq := TRAPE 0 0 0.62 1.02;
+	TERM centroEsq := TRAPE 0.72 0.82 0.92 1.02;
+	TERM centro := TRAPE 0.77 0.87 1.17 1.27;
+	TERM centroDir := TRAPE 1.02 1.12 1.22 1.32;
+	TERM dir := TRAPE 1.02 1.42 2.04 2.04;
+	TERM latDir := TRAPE  1.69 1.79 2.04 2.04;
+END_FUZZIFY
+
+FUZZIFY posX			
+	TERM fundoTras := TRAPE 0 0 0.25 0.35;
+	TERM tras := TRAPE 0 0 0.87 1.57;
+	TERM centroTras := TRAPE 1.12 1.27 1.42 1.57;
+	TERM centro := TRAPE 1.35 1.5 1.65 1.8;
+	TERM centroFrente := TRAPE 1.57 1.72 1.87 2.02;
+	TERM frente := TRAPE 1.57 2.17 3.15 3.15;
+	TERM fundoFrente :=TRAPE 2.8 2.9 3.15 3.15;
+END_FUZZIFY
+
+FUZZIFY speedX			
+	TERM subindo := TRAPE 0 0.5 0.5 0.51;
+	TERM descendo := TRAPE -0.51 -0.5 -0.15 0;
+END_FUZZIFY
+
+FUZZIFY speedY			
+	TERM indoEsquerda := TRAPE 0 0.15 0.5 0.51;
+	TERM indoDireita := TRAPE -0.51 -0.5 -0.15 0;
+END_FUZZIFY
+
+FUZZIFY ballX
+//	TERM tras := SIGM -10 1.2;	
+//	TERM meio := GBELL 0.3 3 1.55;
+//	TERM frente := SIGM 10 1.9;
+//	TERM pertoFrente := TRAPE 0 0.1 0.2 0.5;
+	TERM tras := TRAPE -5 -3 -0.7 0;
+	TERM meio := TRAPE -0.3 -0.15 0.15 0.3;
+	TERM meioTot := TRAPE -0.15 -0.08 0.08 0.15;
+	TERM frente := TRAPE 0 0.7 3 5;
+	TERM frenteTot := TRAPE 0 0.2 3 5;
+
+END_FUZZIFY
+
+FUZZIFY ballY		
+//	TERM esq := SIGM -10 0.6;	
+//	TERM meio := GBELL 0.3 3 1;
+//	TERM dir := SIGM 10 1.4;
+//	TERM pertoEsq := TRAPE -0.5 -0.2 -0.1 0;
+//	TERM pertoDir := TRAPE 0 0.1 0.2 0.5;
+	TERM esq := TRAPE -5 -3 -0.7 0;
+	TERM meioAmplo := TRAPE -0.25-0.08 0.08 0.25;
+	TERM meio := TRAPE -0.15-0.05 0.05 0.15;
+	TERM meioTot := TRAPE -0.07 -0.06 0.06 0.07;
+	TERM dir := TRAPE 0 0.7 3 5;
+
+END_FUZZIFY
+
+FUZZIFY distBola
+	TERM meioPerto := SIGM -50 0.35;	
+	TERM perto := SIGM -50 0.25;
+	TERM muitoPerto := SIGM -50 0.12;
+	TERM colada := SIGM -50 0.01;
+END_FUZZIFY
+
+
+DEFUZZIFY outX
+	TERM frente := TRAPE 0.35 0.4 0.6 0.6;
+	TERM neutro := (-0.01,0)(0,1)(0.01,0);	
+	TERM tras := TRAPE  -0.6 -0.6 -0.4 -0.35 ;
+//	TERM tras := (-0.7,1) (0,0);
+	METHOD : COG;		// Use 'Center Of Gravity' defuzzification method
+	DEFAULT := 0;		// Default value is 0 (if no rule activates defuzzifier)
+END_DEFUZZIFY
+
+DEFUZZIFY outY
+	TERM dir := (0,0) (0.5,1);
+	TERM leveDir := (0,0) (0.35,1) (0.35,0);
+	TERM neutro := (-0.01,0)(0,1)(0.01,0);
+	TERM esq := (-0.5,1) (0,0);
+	TERM leveEsq := (-0.35,0)(-0.35,1) (0,0);
+	METHOD : COG;		// Use 'Center Of Gravity' defuzzification method
+	DEFAULT := 0;		// Default value is 0 (if no rule activates defuzzifier)
+END_DEFUZZIFY
+
+RULEBLOCK No1
+	AND : MIN;
+	OR : MAX;			// Use 'min' for 'and' (also implicit use 'max' for 'or' to fulfill DeMorgan's Law)
+	ACT : MIN;			// Use 'min' activation method
+	ACCU : MAX;			// Use 'max' accumulation method
+
+	RULE 1 : IF posX IS fundoTras THEN outX IS frente;
+	RULE 2 : IF posX IS fundoFrente  THEN outX IS tras;
+	RULE 3 : IF posY IS latEsq THEN outY IS dir;
+	RULE 4 : IF posY IS latDir THEN outY IS esq;
+	RULE 5 : IF ballY IS meio AND speedX IS descendo AND posY IS esq AND ballX IS NOT frenteTot THEN outY IS esq;
+	RULE 6 : IF ballY IS meio AND speedX IS descendo AND posY IS dir AND ballX IS NOT frenteTot THEN outY IS dir;
+	RULE 7 : IF ballY IS esq AND (ballX IS frenteTot OR distBola IS NOT muitoPerto) THEN outY IS esq;
+	RULE 8 : IF ballY IS dir AND (ballX IS frenteTot OR distBola IS NOT muitoPerto)  THEN outY IS dir;
+	RULE 9 : IF ballX IS frente THEN outX IS frente;
+	RULE 10 : IF ballX IS tras OR (ballX IS meio AND ballY IS NOT meio) THEN outX IS tras;
+	RULE 11 : IF ballY IS meioTot THEN outY IS neutro;
+	RULE 12 : IF ballX IS meio THEN outX IS neutro;
+	RULE 13 : IF (speedY IS indoEsquerda OR speedY IS indoDireita) AND ballX IS meio AND distBola IS perto AND speedX IS descendo THEN outX IS tras;
+	RULE 14 : IF posY IS esq AND distBola IS colada THEN outY IS leveEsq;
+	RULE 15 : IF posY IS dir AND distBola IS colada THEN outY IS leveDir;
+	
+	
+END_RULEBLOCK
+
+END_FUNCTION_BLOCK
+

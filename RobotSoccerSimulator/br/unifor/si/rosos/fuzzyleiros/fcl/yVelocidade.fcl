@@ -1,0 +1,59 @@
+FUNCTION_BLOCK yvelocity 
+
+VAR_INPUT
+	ballAngle: REAL;
+	yPosition: REAL;
+END_VAR
+
+VAR_OUTPUT
+	velocity: REAL;
+END_VAR
+
+
+FUZZIFY ballAngle
+	TERM backtLeft := (-180,1) (-150,1) (-110,0);
+	TERM left := (-150,0)(-110,1)(-10,1)(10,0);
+	TERM front := (-20,0)(-10,1)(10,1)(20,0); 
+	TERM right := (-10,0)(10,1)(110,1)(150,0);
+	TERM backRight := (110,0)(150,1)(180,1);
+END_FUZZIFY
+
+FUZZIFY yPosition
+	//TERM outLeft := (-2,1) (-1.5,1) (-1,0);
+	TERM outLeft := TRAPE -2 -2 -1 -0.7; 
+	//TERM in := (-1.1,0) (-1,1)(1,1)(1.1,0);
+	TERM in := TRAPE -1 -1 1 1;
+	//TERM outRight := (1,0)(1.5,1) (2,1); 
+	TERM outRight := TRAPE 0.7 1 2 2;
+	
+END_FUZZIFY
+
+
+DEFUZZIFY velocity
+	TERM right := (0,0) (0.5,1) ;
+	TERM left :=  (-0.5,1) (0,0);
+	TERM stop := (-0.1,0) (0,1) (0.1,0);
+	METHOD : MM;
+	DEFAULT := 0;
+END_DEFUZZIFY
+
+
+
+
+RULEBLOCK No1
+	AND : MIN;
+	ACT : MIN;	// Use 'min' activation method
+	ACCU : MAX;	// Use 'max' accumulation method
+	RULE 1 : IF ballAngle IS backtLeft AND yPosition IS in THEN velocity IS right ;
+	RULE 2 : IF ballAngle IS left      AND yPosition IS in THEN velocity IS left ;
+	RULE 3 : IF ballAngle IS front     AND yPosition IS in THEN velocity IS stop ;
+	RULE 4 : IF ballAngle IS right     AND yPosition IS in THEN velocity IS right ;
+	RULE 5 : IF ballAngle IS backRight AND yPosition IS in THEN velocity IS  left;
+	//RULE 6 : IF yPosition IS in THEN velocity IS stop;
+	RULE 7 : IF yPosition IS outLeft THEN velocity IS right;
+	RULE 8 : IF yPosition IS outRight THEN velocity IS left;
+END_RULEBLOCK
+
+
+
+END_FUNCTION_BLOCK

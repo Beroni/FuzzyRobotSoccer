@@ -1,0 +1,42 @@
+FUNCTION_BLOCK xvelocity 
+
+VAR_INPUT
+	ballAngle: REAL;
+END_VAR
+
+VAR_OUTPUT
+	velocity: REAL;
+END_VAR
+
+
+FUZZIFY ballAngle
+	TERM left := (-180,1)(-45,1)(0,0);
+	TERM front := (-30,0)(-10,1)(10,1)(30,0); 
+	TERM right := (0,0)(45,1)(180,1);
+	
+END_FUZZIFY
+
+
+DEFUZZIFY velocity
+	TERM front := (0,0) (0.5,1) ;
+	TERM back :=  (-0.5,1) (0,0);
+	TERM stop := (-0.1,0) (0,1) (0.1,0);
+	METHOD : LM;
+	DEFAULT := 0;
+END_DEFUZZIFY
+
+
+
+
+RULEBLOCK No1
+	AND : MIN;
+	ACT : MIN;	// Use 'min' activation method
+	ACCU : MAX;	// Use 'max' accumulation method
+	RULE 1 : IF ballAngle IS front THEN velocity IS front ;
+	RULE 2 : IF ballAngle IS right THEN velocity IS back;
+	RULE 3 : IF ballAngle IS left THEN velocity IS back;
+END_RULEBLOCK
+
+
+
+END_FUNCTION_BLOCK

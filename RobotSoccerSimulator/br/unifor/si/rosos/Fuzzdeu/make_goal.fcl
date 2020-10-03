@@ -1,0 +1,76 @@
+FUNCTION_BLOCK kick_orientation
+
+VAR_INPUT
+	opponent_goal_orientation : REAL;
+	own_goal_orientation : REAL;
+	ally_player_position : REAL;
+	ball_moving_orientation : REAL;
+END_VAR
+
+
+VAR_OUTPUT
+	kick_orientation : REAL;
+END_VAR
+
+
+FUZZIFY opponent_goal_orientarion
+	TERM against := gauss 33 2;
+	TERM mid_term_up := gauss 63 2;
+	TERM mid_term_down := gauss 13 2;
+	TERM ahead := gauss 88 2;
+END_FUZZIFY
+
+
+FUZZIFY own_goal_orientarion
+	TERM against := gauss 88 2;
+	TERM mid_term_up := gauss 63 2; 
+	TERM mid_term_down := gauss 13 2;
+	TERM ahead := gauss 33 2;
+END_FUZZIFY
+
+
+FUZZIFY ally_player_position
+	TERM own_goal_field_side := sigm 20 10;
+	TERM mid_field := gbell 10 40 50;
+	TERM opponent_goal_field_side := sigm -80 90;
+END_FUZZIFY
+
+
+FUZZIFY ball_moving_orientation
+	TERM diagonal_top_right := gauss 25 2;
+	TERM diagonal_top_left := gauss 50 2;
+	TERM diagonal_bottom_right := gauss 75 2;
+	TERM diagonal_bottom_left := gauss 100 2;
+	TERM top := gauss 37.5 2;
+	TERM right := gauss 12.5 2;
+	TERM bottom := gauss 87.5 2;
+	TERM left := gauss 62.5 2;
+END_FUZZIFY
+
+
+DEFUZZIFY kick_orientation
+	TERM diagonal_top_right := gauss 25 2;
+	TERM diagonal_top_left := gauss 50 2;
+	TERM diagonal_bottom_right := gauss 75 2;
+	TERM diagonal_bottom_left := gauss 100 2;
+	TERM top := gauss 37.5 2;
+	TERM right := gauss 12.5 2;
+	TERM bottom := gauss 87.5 2;
+	TERM left := gauss 62.5 2;
+	METHOD : COGS: 
+	DEFAULT := 0;
+END_DEFUZZIFY
+
+
+RULEBLOCK rule
+	AND : MIN;
+	ACT : MIN;
+	ACCU : MAX;
+	
+	RULE 1 : IF ball_moving_orientation IS diagonal_top_right AND opponent_goal_orientarion IS ahead THEN kick_orientation IS diagonal_bottom_right
+	
+	RULE 2 : IF ball_moving_orientation IS diagonal_bottom_right AND opponent_goal_orientarion IS ahead THEN kick_orientation IS diagonal_top_right
+
+END_RULEBLOCK
+
+END_FUNCTION_BLOCK

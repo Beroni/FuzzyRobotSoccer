@@ -1,0 +1,121 @@
+FUNCTION_BLOCK fuzhoda
+
+VAR_INPUT
+	ballDist : REAL;
+	ballAngle : REAL;
+	ballX: REAL;
+	ballY: REAL;
+	
+	goalDist : REAL;
+	goalAngle : REAL;
+//	sonicFront: REAL;
+	sonicRight: REAL;
+//	sonicBack: REAL;
+	sonicLeft: REAL;
+END_VAR
+
+VAR_OUTPUT
+	vX : REAL;
+	vY : REAL;
+END_VAR
+
+FUZZIFY sonicRight
+	TERM far := (-1, 1) (0, 0) (1, 1);
+	TERM close := GAUSS 0 0.5;
+END_FUZZIFY
+
+FUZZIFY sonicLeft
+	TERM far := (-1, 1) (0, 0) (1, 1);
+	TERM close := GAUSS 0 0.5;
+END_FUZZIFY
+
+FUZZIFY goalDist
+	TERM far := (-1, 1) (0, 0) (1, 1);
+	TERM close := GAUSS 0 0.5;
+END_FUZZIFY
+
+FUZZIFY goalAngle
+	TERM left := (0,0) (45, 1) (135, 1) (180, 0) (360, 0);
+	TERM right := (0,0) (180, 0) (225, 1) (315, 1) (360, 0);
+	TERM front := (0, 1) (45, 1) (90, 0) (270, 0) (315, 1) (360, 1);
+END_FUZZIFY
+
+FUZZIFY ballAngle
+	TERM behind := (0, 0) (45,0) (135, 1) (225, 1) (315, 0) (360, 0);//GBELL 135 270 180 ;//
+	TERM left := (0,0) (45, 1) (135, 1) (180, 0) (360, 0);//GBELL 22 45 90; //
+	TERM right := (0,0) (180, 0) (225, 1) (315, 1) (360, 0);//GBELL 22 45 270 ;//
+	TERM front := (0, 1) (45, 1) (90, 0) (270, 0) (315, 1) (360, 1);
+END_FUZZIFY
+
+FUZZIFY ballX
+	TERM far := (0, 0) (0.5, 0) (1, 1);
+	TERM close := GAUSS 0 0.2;
+END_FUZZIFY
+
+FUZZIFY ballY
+	TERM far := (-1, 1) (0, 0) (1, 1);
+	TERM close := GAUSS 0 0.2;
+END_FUZZIFY
+
+FUZZIFY ballDist
+	TERM far := (-1, 1) (0, 0) (1, 1);
+	TERM close := GAUSS 0 0.2;
+END_FUZZIFY
+
+DEFUZZIFY vX
+//	TERM fastN := (-1, 1) (-0.5, 0) (0, 0) (1, 0);
+//	TERM fastP := (-1,0) (0,0) (0.5, 0) (1, 1);
+//	TERM slowN  := (-1, 0) (-0.5, 1) (0, 0) (1, 0);
+//	TERM slowP := (-1,0) (0,0) (0.5, 1) (1, 0);
+	TERM fastN := SIGM -12 -0.7 ;
+	TERM fastP := SIGM 12 0.7 ;
+	TERM slow := GAUSS 0 0.16;
+	
+	METHOD : COG;
+	DEFAULT := 0;
+END_DEFUZZIFY
+
+DEFUZZIFY vY
+	TERM fastN := SIGM -12 -0.7 ;//(-1, 1) (-0.5, 0) (0, 0) (1, 0);
+	TERM fastP := SIGM 12 0.7 ;// (-1,0) (0,0) (0.5, 0) (1, 1);
+//	TERM slowN  := GAUSS -0.25 0.08;
+//	TERM slowP := GAUSS 0.25 0.08;
+	TERM slow := GAUSS 0 0.16;
+	TERM no := (0,0);
+	
+	METHOD : COG;
+	DEFAULT := 0;
+END_DEFUZZIFY
+
+RULEBLOCK velBollPos
+	AND : MIN;	// Use 'min' for 'and'
+	ACT : MIN;	// Use 'min' activation method
+	ACCU : MAX;	// Use 'max' accumulation method
+	
+	RULE 1 : IF ballAngle IS front AND ballDist IS close THEN vX IS fastP;
+	RULE 2 : IF ballAngle IS behind THEN vX IS fastN;
+	RULE 3 : IF ballAngle IS left THEN vY IS fastN;
+	RULE 4 : IF ballAngle IS right  THEN vY IS fastP;
+	
+//	RULE 5 : IF ballAngle IS left AND ballAngle IS behind THEN vY IS slowP;
+//	RULE 6 : IF ballAngle IS right AND ballAngle IS behind THEN vY IS slowN;
+	
+//	RULE 7 : IF ballX IS close AND ballY IS close AND ballAngle IS behind AND ballAngle IS left THEN vY IS slowN;
+//	RULE 8 : IF ballX IS close AND ballY IS close AND ballAngle IS behind AND ballAngle IS right THEN vY IS slowP;
+	RULE 7 : IF ballX IS close AND ballY IS close AND ballAngle IS behind AND ballAngle IS left THEN vY IS slow;
+	RULE 8 : IF ballX IS close AND ballY IS close AND ballAngle IS behind AND ballAngle IS right THEN vY IS slow;
+	RULE 9 : IF ballX IS close AND ballY IS close AND NOT ballAngle IS behind AND ballAngle IS left THEN vY IS no;
+	RULE 10: IF ballX IS close AND ballY IS close AND NOT ballAngle IS behind AND ballAngle IS right THEN vY IS no;
+	
+END_RULEBLOCK
+
+RULEBLOCK GoalPos
+	AND : MIN;	// Use 'min' for 'and'
+	ACT : MIN;	// Use 'min' activation method
+	ACCU : MAX;	// Use 'max' accumulation method
+	
+	RULE 1 : IF goalAngle IS right AND goalAngle IS front AND goalDist IS close THEN vY IS fastN;
+	RULE 2 : IF goalAngle IS left AND goalAngle IS front AND goalDist IS close THEN vY IS fastP;
+END_RULEBLOCK
+
+END_FUNCTION_BLOCK

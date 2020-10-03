@@ -1,0 +1,66 @@
+FUNCTION_BLOCK move_orientation
+
+VAR_INPUT
+	collision_force : REAL;
+	colision_area : REAL;
+	ball_location : REAL;
+END_VAR
+
+
+VAR_OUTPUT
+	move_orientation : REAL;
+END_VAR
+
+
+FUZZIFY collision_force
+	TERM weak := gbell 0 0.5 1.5;
+	TERM moderate := gbell 2.5 0.5 6.5; 
+	TERM strong := gbell 7.5 0.5 8.25;
+END_FUZZIFY
+
+FUZZIFY colision_area
+	TERM top_right := gauss 25 2;
+	TERM top_left := gauss 50 2;
+	TERM bottom_right := gauss 75 2;
+	TERM bottom_left := gauss 100 2;
+	TERM top := gauss 37.5 2;
+	TERM right := gauss 12.5 2;
+	TERM bottom := gauss 87.5 2;
+	TERM left := gauss 62.5 2;
+END_FUZZIFY
+
+
+FUZZIFY ball_location
+	TERM top_right := gauss 25 2;
+	TERM top_left := gauss 50 2;
+	TERM bottom_right := gauss 75 2;
+	TERM bottom_left := gauss 100 2;
+	TERM top := gauss 37.5 2;
+	TERM right := gauss 12.5 2;
+	TERM bottom := gauss 87.5 2;
+	TERM left := gauss 62.5 2;
+END_FUZZIFY
+
+
+DEFUZZIFY move_orientation
+	TERM diagonal_top_right := gauss 25 2;
+	TERM diagonal_top_left := gauss 50 2;
+	TERM diagonal_bottom_right := gauss 75 2;
+	TERM diagonal_bottom_left := gauss 100 2;
+	TERM top := gauss 37.5 2;
+	TERM right := gauss 12.5 2;
+	TERM bottom := gauss 87.5 2;
+	TERM left := gauss 62.5 2;
+	
+	//metodo de desfuzzificação
+	METHOD : COG; 
+	DEFAULT := 0;
+END_DEFUZZIFY
+
+
+RULEBLOCK no1
+	AND : MIN;
+	ACT : MIN;
+	ACCU : MAX;
+	
+	RULE 1 : IF
